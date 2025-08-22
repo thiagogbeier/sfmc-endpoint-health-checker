@@ -8,3 +8,4 @@ configuration:
   manageAccess:
   - team: skilupsite-maintainers
     role: Maintain
+    
