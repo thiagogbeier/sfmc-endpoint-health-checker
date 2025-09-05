@@ -4,20 +4,25 @@ export default function App() {
   // Theme state with persistence
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check for saved theme preference or default to light mode
-    const savedTheme = localStorage.getItem('sfmc-health-checker-theme')
-    if (savedTheme) {
-      return savedTheme === 'dark'
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('sfmc-health-checker-theme')
+      if (savedTheme) {
+        return savedTheme === 'dark'
+      }
+      // Check system preference
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
     }
-    // Check system preference
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    return false // Default to light mode if window is not available
   })
 
   // Save theme preference to localStorage
   useEffect(() => {
-    localStorage.setItem('sfmc-health-checker-theme', isDarkMode ? 'dark' : 'light')
-    // Update body background to match theme
-    document.body.style.backgroundColor = isDarkMode ? '#1a1a1a' : '#ffffff'
-    document.body.style.transition = 'background-color 0.3s ease'
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sfmc-health-checker-theme', isDarkMode ? 'dark' : 'light')
+      // Update body background to match theme
+      document.body.style.backgroundColor = isDarkMode ? '#1a1a1a' : '#ffffff'
+      document.body.style.transition = 'background-color 0.3s ease'
+    }
   }, [isDarkMode])
 
   // Theme colors
