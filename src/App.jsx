@@ -196,11 +196,61 @@ export default function App() {
 
   return (
     <main style={{ maxWidth: 1000, margin: '20px auto', padding: 20, fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ textAlign: 'center', marginBottom: 40 }}>
-        <h1 style={{ color: '#0176D3', margin: 0 }}>SFMC Endpoint Health Checker</h1>
-        <p style={{ color: '#666', margin: '8px 0 0 0' }}>
-          Quick assessment tool for CSA engineers and managers
-        </p>
+      <header style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        marginBottom: 40,
+        padding: '20px 0',
+        borderBottom: '2px solid #0176D3',
+        flexWrap: 'wrap',
+        gap: 20
+      }}>
+        {/* Logo */}
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          flexShrink: 0
+        }}>
+          <img 
+            src="/logo.png" 
+            alt="SFMC Logo" 
+            style={{ 
+              height: 48, 
+              width: 'auto',
+              objectFit: 'contain'
+            }}
+            onError={(e) => {
+              // Fallback if logo doesn't exist - show a placeholder
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+          <div style={{ 
+            display: 'none',
+            width: 48,
+            height: 48,
+            backgroundColor: '#0176D3',
+            borderRadius: 6,
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: 16
+          }}>
+            SFMC
+          </div>
+        </div>
+        
+        {/* Title */}
+        <div style={{ textAlign: 'center', flex: 1, minWidth: 300 }}>
+          <h1 style={{ color: '#0176D3', margin: 0, fontSize: 28 }}>
+            SFMC Endpoint Health Checker
+          </h1>
+          <p style={{ color: '#666', margin: '8px 0 0 0', fontSize: 16 }}>
+            Quick assessment tool for CSA engineers and managers
+          </p>
+        </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: hasResults ? '1fr 1fr' : '1fr', gap: 30 }}>
