@@ -275,7 +275,7 @@ export default function App() {
             flexShrink: 0
           }}>
             <img 
-              src="/logo.png" 
+              src="./logo.png" 
               alt="SFMC Logo" 
               style={{ 
                 height: 48, 
