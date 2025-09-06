@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import SSLInspection from './SSLInspection.jsx'
 import BulkSSLInspection from './BulkSSLInspection.jsx'
+import IntuneReport from './IntuneReport.jsx'
 import { healthCheckAPI } from './services/api.js'
 
 export default function App() {
@@ -402,6 +403,32 @@ export default function App() {
           >
             📋 Bulk SSL Inspection
           </button>
+          <button
+            onClick={() => setCurrentPage('intune-report')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 6,
+              backgroundColor: currentPage === 'intune-report' ? theme.primaryButton : theme.cardBg,
+              color: currentPage === 'intune-report' ? '#ffffff' : theme.primaryText,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              transition: 'all 0.3s ease',
+              border: `2px solid ${currentPage === 'intune-report' ? theme.primaryButton : theme.border}`
+            }}
+            onMouseOver={(e) => {
+              if (currentPage !== 'intune-report') {
+                e.target.style.backgroundColor = theme.sectionBg
+              }
+            }}
+            onMouseOut={(e) => {
+              if (currentPage !== 'intune-report') {
+                e.target.style.backgroundColor = theme.cardBg
+              }
+            }}
+          >
+            📱 Intune Report
+          </button>
         </nav>
 
         {/* Theme Toggle Button */}
@@ -779,6 +806,8 @@ export default function App() {
         <SSLInspection theme={theme} />
       ) : currentPage === 'bulk-ssl-inspection' ? (
         <BulkSSLInspection theme={theme} />
+      ) : currentPage === 'intune-report' ? (
+        <IntuneReport theme={theme} />
       ) : null}
 
       <footer style={{ marginTop: 40, textAlign: 'center', color: theme.secondaryText, fontSize: 14 }}>
