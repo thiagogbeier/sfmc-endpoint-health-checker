@@ -5,7 +5,15 @@ const axios = require('axios');
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    /^https:\/\/.*\.app\.github\.dev$/,  // GitHub Codespaces domains
+    /^http:\/\/.*:5173$/                 // Local development
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Health Check Endpoint
@@ -332,11 +340,11 @@ app.get('/api/system-info', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(50));
   console.log('🚀 SFMC Health Checker Backend Server');
   console.log('='.repeat(50));
-  console.log(`📡 Server running on: http://localhost:${PORT}`);
+  console.log(`📡 Server running on: http://0.0.0.0:${PORT}`);
   console.log(`🔍 Health Check API: POST /api/health-check`);
   console.log(`🔒 SSL Inspect API: POST /api/ssl-inspect`);
   console.log(`💚 Status API: GET /api/health`);

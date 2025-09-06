@@ -1,5 +1,17 @@
 // API service for real backend communication
-const API_BASE = 'http://localhost:3001/api';
+// Auto-detect API base URL based on environment
+const getApiBase = () => {
+  // In GitHub Codespaces, detect the forwarded port
+  if (window.location.hostname.includes('.app.github.dev')) {
+    // Replace the port 5173 with 3001 in the current URL
+    const baseUrl = window.location.origin.replace('-5173.', '-3001.');
+    return `${baseUrl}/api`;
+  }
+  // Local development
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE = getApiBase();
 
 export const healthCheckAPI = async (urls) => {
   try {
