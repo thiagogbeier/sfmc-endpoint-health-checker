@@ -98,8 +98,8 @@ app.post('/api/ssl-inspect', (req, res) => {
     const [hostname, port = '443'] = urlObj.url.replace(/^https?:\/\//, '').split(':');
     console.log(`[SSL Inspect] Checking: ${hostname}:${port}`);
     
-    // Use timeout and proper OpenSSL command
-    const command = `timeout 15 openssl s_client -connect ${hostname}:${port} -servername ${hostname} -verify_return_error < /dev/null 2>&1`;
+    // Use timeout and proper OpenSSL command (removed -verify_return_error to handle self-signed certs)
+    const command = `timeout 15 openssl s_client -connect ${hostname}:${port} -servername ${hostname} < /dev/null 2>&1`;
     
     const startTime = Date.now();
     exec(command, (error, stdout, stderr) => {
@@ -163,11 +163,43 @@ function parseSSLOutput(output, hostname, port, responseTime) {
     };
   }
   
-  // Extract certificate information
-  const subject = extractField(output, 'subject=') || extractField(output, 's:');
-  const issuer = extractField(output, 'issuer=') || extractField(output, 'i:');
-  const notBefore = extractDateField(output, 'notBefore=');
-  const notAfter = extractDateField(output, 'notAfter=');
+  // Check if we got a certificate
+  if (!output.includes('Server certificate') && !output.includes('Certificate chain')) {
+    return {
+      id: Math.random().toString(36).substring(7),
+      hostname,
+      port: parseInt(port),
+      status: 'error',
+      message: 'No certificate found',
+      responseTime,
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  // Extract certificate information from the new format
+  let subject = '';
+  let issuer = '';
+  let notBefore = '';
+  let notAfter = '';
+  
+  // Parse certificate chain format: " 0 s:CN = mam-tun-4.letsintune.com"
+  const chainMatch = output.match(/\s*0\s+s:(.+)/);
+  if (chainMatch) {
+    subject = chainMatch[1].trim();
+  }
+  
+  // Parse issuer from chain: " i:DC = com, DC = contoso..."
+  const issuerMatch = output.match(/\s*0\s+s:.+\n\s*i:(.+)/);
+  if (issuerMatch) {
+    issuer = issuerMatch[1].trim();
+  }
+  
+  // Parse validity dates from the v: line
+  const validityMatch = output.match(/v:NotBefore:\s*([^;]+);\s*NotAfter:\s*([^;]+)/);
+  if (validityMatch) {
+    notBefore = validityMatch[1].trim();
+    notAfter = validityMatch[2].trim();
+  }
   
   // Extract protocol and cipher information
   const protocol = extractField(output, 'Protocol\\s*:') || 'Unknown';
@@ -177,9 +209,17 @@ function parseSSLOutput(output, hostname, port, responseTime) {
   const depthMatch = output.match(/depth=(\d+)/);
   const depth = depthMatch ? parseInt(depthMatch[1]) : 0;
   
-  // Verification result
-  const verifyResult = extractField(output, 'Verify return code:') || 'Unknown';
-  const isVerified = verifyResult.includes('0 (ok)');
+  // Check for verification errors
+  const hasVerifyError = output.includes('verify error') || output.includes('self-signed certificate');
+  const isVerified = !hasVerifyError;
+  
+  // Parse verification details
+  let verifyResult = 'Unknown';
+  if (output.includes('self-signed certificate in certificate chain')) {
+    verifyResult = 'Self-signed certificate in chain';
+  } else if (output.includes('verify return:1')) {
+    verifyResult = 'Certificate accepted with warnings';
+  }
   
   if (!notAfter) {
     return {
@@ -187,13 +227,15 @@ function parseSSLOutput(output, hostname, port, responseTime) {
       hostname,
       port: parseInt(port),
       status: 'error',
-      message: 'No certificate found or parsing failed',
+      message: 'Could not parse certificate dates',
       responseTime,
       timestamp: new Date().toISOString()
     };
   }
   
+  // Parse the date format "Aug  2 04:39:31 2025 GMT"
   const expiryDate = new Date(notAfter);
+  const startDate = new Date(notBefore);
   const now = new Date();
   const isExpired = expiryDate < now;
   const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
@@ -207,9 +249,9 @@ function parseSSLOutput(output, hostname, port, responseTime) {
   } else if (daysUntilExpiry <= 30) {
     status = 'warning';
     message = `Certificate expires in ${daysUntilExpiry} days`;
-  } else if (!isVerified) {
+  } else if (hasVerifyError) {
     status = 'warning';
-    message = 'Certificate verification failed';
+    message = 'Certificate has verification warnings (self-signed chain)';
   }
   
   return {
@@ -231,7 +273,9 @@ function parseSSLOutput(output, hostname, port, responseTime) {
       isExpired,
       isVerified,
       verifyResult: verifyResult,
-      chainDepth: depth
+      chainDepth: depth,
+      serialNumber: extractField(output, 'serial:') || 'Not available',
+      keySize: extract2048KeySize(output)
     },
     timestamp: new Date().toISOString()
   };
@@ -254,6 +298,12 @@ function extractDateField(output, fieldName) {
   } catch (e) {
     return field; // Return as-is if parsing fails
   }
+}
+
+function extract2048KeySize(output) {
+  // Look for "a:PKEY: rsaEncryption, 2048 (bit)"
+  const keyMatch = output.match(/a:PKEY:\s*\w+,\s*(\d+)\s*\(bit\)/);
+  return keyMatch ? `${keyMatch[1]} bit` : 'Unknown';
 }
 
 // Health check for the API itself
