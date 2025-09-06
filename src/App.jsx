@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import SSLInspection from './SSLInspection.jsx'
 
 export default function App() {
+  // Navigation state
+  const [currentPage, setCurrentPage] = useState('health-checker')
+
   // Theme state with persistence
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check for saved theme preference or default to light mode
@@ -320,6 +324,62 @@ export default function App() {
           </div>
         </div>
 
+        {/* Navigation Tabs */}
+        <nav style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setCurrentPage('health-checker')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 6,
+              backgroundColor: currentPage === 'health-checker' ? theme.primaryButton : theme.cardBg,
+              color: currentPage === 'health-checker' ? '#ffffff' : theme.primaryText,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              transition: 'all 0.3s ease',
+              border: `2px solid ${currentPage === 'health-checker' ? theme.primaryButton : theme.border}`
+            }}
+            onMouseOver={(e) => {
+              if (currentPage !== 'health-checker') {
+                e.target.style.backgroundColor = theme.sectionBg
+              }
+            }}
+            onMouseOut={(e) => {
+              if (currentPage !== 'health-checker') {
+                e.target.style.backgroundColor = theme.cardBg
+              }
+            }}
+          >
+            🔍 Health Checker
+          </button>
+          <button
+            onClick={() => setCurrentPage('ssl-inspection')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 6,
+              backgroundColor: currentPage === 'ssl-inspection' ? theme.primaryButton : theme.cardBg,
+              color: currentPage === 'ssl-inspection' ? '#ffffff' : theme.primaryText,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              transition: 'all 0.3s ease',
+              border: `2px solid ${currentPage === 'ssl-inspection' ? theme.primaryButton : theme.border}`
+            }}
+            onMouseOver={(e) => {
+              if (currentPage !== 'ssl-inspection') {
+                e.target.style.backgroundColor = theme.sectionBg
+              }
+            }}
+            onMouseOut={(e) => {
+              if (currentPage !== 'ssl-inspection') {
+                e.target.style.backgroundColor = theme.cardBg
+              }
+            }}
+          >
+            🔒 SSL Inspection
+          </button>
+        </nav>
+
         {/* Theme Toggle Button */}
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
@@ -352,7 +412,9 @@ export default function App() {
         </button>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: hasResults ? '1fr 1fr' : '1fr', gap: 30 }}>
+      {/* Page Content */}
+      {currentPage === 'health-checker' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: hasResults ? '1fr 1fr' : '1fr', gap: 30 }}>
         {/* Input Form */}
         <section style={{ 
           backgroundColor: theme.sectionBg, 
@@ -689,6 +751,9 @@ export default function App() {
           </section>
         )}
       </div>
+      ) : currentPage === 'ssl-inspection' ? (
+        <SSLInspection theme={theme} />
+      ) : null}
 
       <footer style={{ marginTop: 40, textAlign: 'center', color: theme.secondaryText, fontSize: 14 }}>
         <p>
