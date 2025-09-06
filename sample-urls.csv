@@ -1,0 +1,11 @@
+URL,Description,Priority
+google.com,Google Search,High
+github.com,GitHub Platform,High
+stackoverflow.com,Stack Overflow,Medium
+microsoft.com,Microsoft Main,High
+amazon.com,Amazon Web Services,High
+mam-tun-1.letsintune.com,Test Tunnel 1,Low
+mam-tun-2.letsintune.com,Test Tunnel 2,Low
+login.microsoftonline.com,Microsoft Login,Critical
+www.salesforce.com,Salesforce Platform,High
+httpbin.org,HTTP Testing Service,Low

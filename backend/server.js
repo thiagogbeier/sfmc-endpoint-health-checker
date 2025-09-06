@@ -123,32 +123,39 @@ app.post('/api/health-check', async (req, res) => {
   res.json({ results });
 });
 
-// SSL Inspection Function for single hostname
+// SSL Inspection Function for single hostname with improved error handling
 async function inspectSSLCertificate(hostname, port = 443) {
   return new Promise((resolve, reject) => {
     console.log(`[SSL Inspect] Checking: ${hostname}:${port}`);
     
-    // Use timeout and proper OpenSSL command (removed -verify_return_error to handle self-signed certs)
-    const command = `timeout 15 openssl s_client -connect ${hostname}:${port} -servername ${hostname} < /dev/null 2>&1`;
+    // Use shorter timeout for faster response in bulk operations
+    const command = `timeout 8 openssl s_client -connect ${hostname}:${port} -servername ${hostname} < /dev/null 2>&1`;
     
     const startTime = Date.now();
-    exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
+    exec(command, { timeout: 12000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
       const responseTime = Date.now() - startTime;
       console.log(`[SSL Inspect] Command completed for ${hostname}:${port} in ${responseTime}ms`);
       
-      if (error && error.code === 'TIMEOUT') {
-        // Timeout
+      // Handle timeout errors more gracefully
+      if (error && (error.code === 'TIMEOUT' || error.killed || responseTime > 11000)) {
+        console.log(`[SSL Inspect] Timeout for ${hostname}:${port}`);
         resolve({
+          id: Math.random().toString(36).substr(2, 6),
           hostname,
           port: parseInt(port),
           status: 'error',
-          message: 'Connection timeout (10s)',
+          message: 'Connection timeout - endpoint may be unreachable',
           connected: false,
           responseTime,
           timestamp: new Date().toISOString()
         });
-      } else if (error) {
+        return;
+      } 
+      
+      if (error) {
+        console.log(`[SSL Inspect] Error for ${hostname}:${port}: ${error.message}`);
         resolve({
+          id: Math.random().toString(36).substr(2, 6),
           hostname,
           port: parseInt(port),
           status: 'error',
@@ -158,11 +165,12 @@ async function inspectSSLCertificate(hostname, port = 443) {
           error: stderr || error.message,
           timestamp: new Date().toISOString()
         });
-      } else {
-        // Parse OpenSSL output
-        const certInfo = parseSSLOutput(stdout, hostname, port, responseTime);
-        resolve(certInfo);
+        return;
       }
+      
+      // Parse OpenSSL output if successful
+      const certInfo = parseSSLOutput(stdout, hostname, port, responseTime);
+      resolve(certInfo);
     });
   });
 }
@@ -182,13 +190,15 @@ app.post('/api/ssl-inspect', (req, res) => {
       })
       .catch(error => {
         console.error(`[SSL Inspect] Error for ${hostname}:${port}:`, error.message);
-        res.json({
-          status: 'error',
-          error: error.message,
+        res.status(500).json({
+          id: Math.random().toString(36).substr(2, 6),
           hostname,
-          port,
+          port: parseInt(port),
+          status: 'error',
+          message: error.message.includes('timeout') ? 'Request timeout' : 'SSL inspection failed',
           connected: false,
-          responseTime: null
+          responseTime: null,
+          timestamp: new Date().toISOString()
         });
       });
     return;

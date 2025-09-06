@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SSLInspection from './SSLInspection.jsx'
+import BulkSSLInspection from './BulkSSLInspection.jsx'
 import { healthCheckAPI } from './services/api.js'
 
 export default function App() {
@@ -374,6 +375,32 @@ export default function App() {
             }}
           >
             🔒 SSL Inspection
+          </button>
+          <button
+            onClick={() => setCurrentPage('bulk-ssl-inspection')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 6,
+              backgroundColor: currentPage === 'bulk-ssl-inspection' ? theme.primaryButton : theme.cardBg,
+              color: currentPage === 'bulk-ssl-inspection' ? '#ffffff' : theme.primaryText,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              transition: 'all 0.3s ease',
+              border: `2px solid ${currentPage === 'bulk-ssl-inspection' ? theme.primaryButton : theme.border}`
+            }}
+            onMouseOver={(e) => {
+              if (currentPage !== 'bulk-ssl-inspection') {
+                e.target.style.backgroundColor = theme.sectionBg
+              }
+            }}
+            onMouseOut={(e) => {
+              if (currentPage !== 'bulk-ssl-inspection') {
+                e.target.style.backgroundColor = theme.cardBg
+              }
+            }}
+          >
+            📋 Bulk SSL Inspection
           </button>
         </nav>
 
@@ -750,6 +777,8 @@ export default function App() {
       </div>
       ) : currentPage === 'ssl-inspection' ? (
         <SSLInspection theme={theme} />
+      ) : currentPage === 'bulk-ssl-inspection' ? (
+        <BulkSSLInspection theme={theme} />
       ) : null}
 
       <footer style={{ marginTop: 40, textAlign: 'center', color: theme.secondaryText, fontSize: 14 }}>

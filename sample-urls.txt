@@ -1,0 +1,21 @@
+# Sample URLs for Bulk SSL Inspection Testing
+# Lines starting with # are comments and will be ignored
+
+# Working URLs with valid certificates
+google.com
+github.com
+stackoverflow.com
+microsoft.com
+amazon.com
+
+# URLs that might have certificate issues
+mam-tun-1.letsintune.com
+mam-tun-2.letsintune.com
+mam-tun-3.letsintune.com
+mam-tun-4.letsintune.com
+
+# Additional test URLs
+login.microsoftonline.com
+www.salesforce.com
+httpbin.org
+example.com

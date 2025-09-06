@@ -1,0 +1,8 @@
+# Safe URLs for Bulk SSL Inspection Testing
+# These are known working URLs with valid certificates
+
+google.com
+github.com
+stackoverflow.com
+microsoft.com
+example.com
