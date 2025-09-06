@@ -238,7 +238,7 @@ ${index + 1}. ${result.url}
               />
               <input
                 type="text"
-                placeholder={`Enter hostname${index === 0 ? ' (e.g., mstunnel.pat.td.com)' : ''}`}
+                placeholder={`Enter hostname${index === 0 ? ' (e.g., mam-tun-4.letsintune.com)' : ''}`}
                 value={url.url}
                 onChange={(e) => updateUrl(url.id, 'url', e.target.value)}
                 disabled={!url.enabled || isChecking}
