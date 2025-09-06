@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { exec } = require('child_process');
 const axios = require('axios');
+const https = require('https');
 
 const app = express();
 const PORT = 3001;
@@ -56,15 +57,21 @@ app.post('/api/health-check', async (req, res) => {
       console.log(`[Health Check] Testing: ${urlObj.url}`);
       const response = await axios.get(urlObj.url, { 
         timeout: 10000,
-        validateStatus: () => true,
+        validateStatus: () => true, // Accept any HTTP status code
+        httpsAgent: new (require('https').Agent)({
+          rejectUnauthorized: false // Ignore SSL certificate errors
+        }),
         headers: {
           'User-Agent': 'SFMC-Health-Checker/1.0'
         }
       });
       const responseTime = Date.now() - startTime;
       
-      const status = response.status < 400 ? 'healthy' : 
-                    response.status < 500 ? 'warning' : 'error';
+      // Simplified status logic - if we get ANY response, it's up
+      const status = response.status < 500 ? 'healthy' : 'error';
+      const message = response.status < 400 ? 'HTTPS endpoint is up and running' :
+                     response.status < 500 ? `HTTP ${response.status} - Service responding` :
+                     `HTTP ${response.status} - Server error`;
       
       results.push({
         id: urlObj.id,
@@ -72,7 +79,7 @@ app.post('/api/health-check', async (req, res) => {
         status,
         responseTime,
         statusCode: response.status,
-        message: `HTTP ${response.status} - ${response.statusText}`,
+        message,
         timestamp: new Date().toISOString(),
         headers: {
           'content-type': response.headers['content-type'],
@@ -85,16 +92,25 @@ app.post('/api/health-check', async (req, res) => {
     } catch (error) {
       const responseTime = Date.now() - startTime;
       
+      // Simplified error messages focusing on basic connectivity
+      let message = 'HTTPS endpoint is down';
+      if (error.code === 'ENOTFOUND') {
+        message = 'Domain not found - check URL';
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        message = 'Connection timeout - endpoint unreachable';
+      } else if (error.code === 'ECONNREFUSED') {
+        message = 'Connection refused - service not running';
+      } else if (error.code === 'ECONNRESET') {
+        message = 'Connection reset - network issue';
+      }
+      
       results.push({
         id: urlObj.id,
         url: urlObj.url,
         status: 'error',
         responseTime,
         statusCode: null,
-        message: error.code === 'ENOTFOUND' ? 'Domain not found' :
-                error.code === 'ETIMEDOUT' ? 'Connection timeout' :
-                error.code === 'ECONNREFUSED' ? 'Connection refused' :
-                error.message,
+        message,
         timestamp: new Date().toISOString(),
         errorCode: error.code
       });

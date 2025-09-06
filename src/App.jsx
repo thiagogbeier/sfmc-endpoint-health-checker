@@ -193,7 +193,7 @@ export default function App() {
       console.log('🔍 Starting health check for:', validEndpoints);
       
       // Call the real backend API directly
-      const response = await fetch('http://localhost:3001/api/health-check', {
+      const response = await fetch('/api/health-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
