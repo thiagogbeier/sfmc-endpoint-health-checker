@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function SSLInspection() {
+export default function SSLInspection({ theme }) {
   const [urls, setUrls] = useState([
     { id: 1, url: 'mam-tun-4.letsintune.com', enabled: true },
     { id: 2, url: 'www.google.com', enabled: false },
@@ -150,7 +150,7 @@ End of Report`
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ 
-        background: 'white', 
+        background: theme.cardBg, 
         borderRadius: '12px', 
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', 
         padding: '32px' 
@@ -158,13 +158,13 @@ End of Report`
         <h2 style={{ 
           fontSize: '28px', 
           fontWeight: 'bold', 
-          color: '#1f2937', 
+          color: theme.primaryText, 
           marginBottom: '16px' 
         }}>
           🔒 SSL Certificate Inspection
         </h2>
         <p style={{ 
-          color: '#6b7280', 
+          color: theme.secondaryText, 
           marginBottom: '32px', 
           fontSize: '16px' 
         }}>
@@ -173,7 +173,7 @@ End of Report`
 
         {error && (
           <div style={{
-            background: '#fef2f2',
+            background: theme.cardBg,
             border: '2px solid #fecaca',
             borderRadius: '8px',
             padding: '16px',
@@ -207,7 +207,7 @@ End of Report`
           <h3 style={{ 
             fontSize: '20px', 
             fontWeight: '600', 
-            color: '#374151', 
+            color: theme.primaryText, 
             marginBottom: '20px' 
           }}>
             URLs to Inspect
@@ -237,13 +237,15 @@ End of Report`
                 style={{ 
                   flex: 1, 
                   padding: '12px 16px', 
-                  border: '2px solid #d1d5db', 
+                  border: `2px solid ${theme.inputBorder}`, 
                   borderRadius: '8px', 
                   fontSize: '16px',
-                  outline: 'none'
+                  outline: 'none',
+                  backgroundColor: theme.inputBg,
+                  color: theme.primaryText
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                onBlur={(e) => e.target.style.borderColor = theme.inputBorder}
               />
               {urls.length > 1 && (
                 <button
@@ -271,16 +273,16 @@ End of Report`
               onClick={addUrl}
               style={{ 
                 padding: '12px 20px', 
-                background: '#f3f4f6', 
-                color: '#374151', 
-                border: '1px solid #d1d5db', 
+                background: theme.sectionBg, 
+                color: theme.primaryText, 
+                border: `1px solid ${theme.border}`, 
                 borderRadius: '8px', 
                 cursor: 'pointer',
                 fontWeight: '600',
                 fontSize: '16px'
               }}
-              onMouseOver={(e) => e.target.style.background = '#e5e7eb'}
-              onMouseOut={(e) => e.target.style.background = '#f3f4f6'}
+              onMouseOver={(e) => e.target.style.background = theme.inputBg}
+              onMouseOut={(e) => e.target.style.background = theme.sectionBg}
             >
               + Add URL
             </button>
@@ -289,7 +291,7 @@ End of Report`
               disabled={isLoading}
               style={{ 
                 padding: '12px 24px', 
-                background: isLoading ? '#9ca3af' : '#3b82f6', 
+                background: isLoading ? theme.disabledButton : theme.primaryButton, 
                 color: 'white', 
                 border: 'none', 
                 borderRadius: '8px', 
@@ -298,10 +300,10 @@ End of Report`
                 fontSize: '16px'
               }}
               onMouseOver={(e) => {
-                if (!isLoading) e.target.style.background = '#2563eb'
+                if (!isLoading) e.target.style.background = theme.primaryButtonHover
               }}
               onMouseOut={(e) => {
-                if (!isLoading) e.target.style.background = '#3b82f6'
+                if (!isLoading) e.target.style.background = theme.primaryButton
               }}
             >
               {isLoading ? '🔄 Inspecting...' : '🔍 Inspect SSL Certificates'}
@@ -319,14 +321,14 @@ End of Report`
             <div style={{ 
               width: '32px', 
               height: '32px', 
-              border: '3px solid #f3f3f3', 
+              border: `3px solid ${theme.border}`, 
               borderTop: '3px solid #3b82f6', 
               borderRadius: '50%', 
               animation: 'spin 1s linear infinite' 
             }}></div>
             <span style={{ 
               marginLeft: '12px', 
-              color: '#6b7280', 
+              color: theme.secondaryText, 
               fontSize: '16px' 
             }}>
               Analyzing SSL certificates...
@@ -339,15 +341,15 @@ End of Report`
             <h3 style={{ 
               fontSize: '20px', 
               fontWeight: '600', 
-              color: '#374151', 
+              color: theme.primaryText, 
               marginBottom: '20px' 
             }}>
               📊 Health Check Results
             </h3>
 
             <div style={{
-              background: '#f8fafc',
-              border: '2px solid #e2e8f0',
+              background: theme.sectionBg,
+              border: `2px solid ${theme.border}`,
               borderRadius: '12px',
               padding: '24px',
               marginBottom: '24px'
@@ -355,7 +357,7 @@ End of Report`
               <h4 style={{
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#1e293b',
+                color: theme.primaryText,
                 marginBottom: '16px'
               }}>
                 SSL Inspection Summary
@@ -370,13 +372,13 @@ End of Report`
                   <div style={{
                     fontSize: '24px',
                     fontWeight: 'bold',
-                    color: '#334155'
+                    color: theme.primaryText
                   }}>
                     {totalChecked}
                   </div>
                   <div style={{
                     fontSize: '14px',
-                    color: '#64748b',
+                    color: theme.secondaryText,
                     fontWeight: '500'
                   }}>
                     Total Checked
@@ -444,8 +446,7 @@ End of Report`
                               result.status === 'warning' ? '#fde047' : '#fecaca',
                   borderRadius: '12px',
                   padding: '24px',
-                  background: result.status === 'valid' ? '#f0fdf4' : 
-                             result.status === 'warning' ? '#fefce8' : '#fef2f2'
+                  background: theme.cardBg
                 }}>
                   <div style={{ 
                     display: 'flex', 
@@ -465,7 +466,7 @@ End of Report`
                         </span>
                         <h4 style={{ 
                           fontWeight: '600', 
-                          color: '#1f2937',
+                          color: theme.primaryText,
                           fontSize: '18px',
                           margin: 0
                         }}>
@@ -486,7 +487,7 @@ End of Report`
                       </div>
                       
                       <p style={{ 
-                        color: '#374151', 
+                        color: theme.secondaryText, 
                         marginBottom: '20px',
                         fontSize: '16px'
                       }}>
@@ -503,12 +504,12 @@ End of Report`
                         <div>
                           <span style={{ 
                             fontWeight: '600', 
-                            color: '#6b7280' 
+                            color: theme.secondaryText 
                           }}>
                             Response Time:
                           </span>
                           <div style={{ 
-                            color: '#1f2937',
+                            color: theme.primaryText,
                             fontWeight: '500' 
                           }}>
                             {result.responseTime ? `${result.responseTime}ms` : 'N/A'}
@@ -517,12 +518,12 @@ End of Report`
                         <div>
                           <span style={{ 
                             fontWeight: '600', 
-                            color: '#6b7280' 
+                            color: theme.secondaryText 
                           }}>
                             Connected:
                           </span>
                           <div style={{ 
-                            color: '#1f2937',
+                            color: theme.primaryText,
                             fontWeight: '500' 
                           }}>
                             {result.connected ? '✅ Yes' : '❌ No'}
@@ -532,12 +533,12 @@ End of Report`
                           <div>
                             <span style={{ 
                               fontWeight: '600', 
-                              color: '#6b7280' 
+                              color: theme.secondaryText 
                             }}>
                               Protocol:
                             </span>
                             <div style={{ 
-                              color: '#1f2937',
+                              color: theme.primaryText,
                               fontWeight: '500' 
                             }}>
                               {result.protocol}
@@ -548,12 +549,12 @@ End of Report`
                           <div>
                             <span style={{ 
                               fontWeight: '600', 
-                              color: '#6b7280' 
+                              color: theme.secondaryText 
                             }}>
                               Cipher:
                             </span>
                             <div style={{ 
-                              color: '#1f2937',
+                              color: theme.primaryText,
                               fontWeight: '500' 
                             }}>
                               {result.cipher}
@@ -565,14 +566,14 @@ End of Report`
                       {result.certificate && (
                         <div style={{ 
                           padding: '20px', 
-                          background: 'white', 
+                          background: theme.sectionBg, 
                           borderRadius: '8px', 
-                          border: '1px solid #e5e7eb',
+                          border: `1px solid ${theme.border}`,
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                         }}>
                           <h5 style={{ 
                             fontWeight: '600', 
-                            color: '#374151', 
+                            color: theme.primaryText, 
                             marginBottom: '16px',
                             fontSize: '16px'
                           }}>
@@ -587,12 +588,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Subject:
                               </span>
                               <div style={{ 
-                                color: '#1f2937',
+                                color: theme.primaryText,
                                 wordBreak: 'break-all',
                                 fontFamily: 'monospace',
                                 fontSize: '12px',
@@ -604,12 +605,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Issuer:
                               </span>
                               <div style={{ 
-                                color: '#1f2937',
+                                color: theme.primaryText,
                                 wordBreak: 'break-all',
                                 fontFamily: 'monospace',
                                 fontSize: '12px',
@@ -621,12 +622,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Valid From:
                               </span>
                               <div style={{ 
-                                color: '#1f2937',
+                                color: theme.primaryText,
                                 fontWeight: '500',
                                 marginTop: '4px'
                               }}>
@@ -636,12 +637,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Valid To:
                               </span>
                               <div style={{ 
-                                color: '#1f2937',
+                                color: theme.primaryText,
                                 fontWeight: '500',
                                 marginTop: '4px'
                               }}>
@@ -651,12 +652,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Days Until Expiry:
                               </span>
                               <div style={{ 
-                                color: result.certificate.daysUntilExpiry < 30 ? '#dc2626' : '#1f2937',
+                                color: result.certificate.daysUntilExpiry < 30 ? '#dc2626' : theme.primaryText,
                                 fontWeight: '600',
                                 marginTop: '4px'
                               }}>
@@ -666,12 +667,12 @@ End of Report`
                             <div>
                               <span style={{ 
                                 fontWeight: '600', 
-                                color: '#6b7280' 
+                                color: theme.secondaryText 
                               }}>
                                 Key Size:
                               </span>
                               <div style={{ 
-                                color: '#1f2937',
+                                color: theme.primaryText,
                                 fontWeight: '500',
                                 marginTop: '4px'
                               }}>
@@ -728,7 +729,7 @@ End of Report`
                 onClick={exportResults}
                 style={{ 
                   padding: '12px 20px', 
-                  background: '#10b981', 
+                  background: theme.secondaryButton, 
                   color: 'white', 
                   border: 'none', 
                   borderRadius: '8px', 
@@ -736,8 +737,8 @@ End of Report`
                   fontWeight: '600',
                   fontSize: '14px'
                 }}
-                onMouseOver={(e) => e.target.style.background = '#059669'}
-                onMouseOut={(e) => e.target.style.background = '#10b981'}
+                onMouseOver={(e) => e.target.style.background = '#e55a2b'}
+                onMouseOut={(e) => e.target.style.background = theme.secondaryButton}
               >
                 📥 Export Results
               </button>
@@ -745,7 +746,7 @@ End of Report`
                 onClick={copyToClipboard}
                 style={{ 
                   padding: '12px 20px', 
-                  background: '#6366f1', 
+                  background: theme.primaryButton, 
                   color: 'white', 
                   border: 'none', 
                   borderRadius: '8px', 
@@ -753,8 +754,8 @@ End of Report`
                   fontWeight: '600',
                   fontSize: '14px'
                 }}
-                onMouseOver={(e) => e.target.style.background = '#4f46e5'}
-                onMouseOut={(e) => e.target.style.background = '#6366f1'}
+                onMouseOver={(e) => e.target.style.background = theme.primaryButtonHover}
+                onMouseOut={(e) => e.target.style.background = theme.primaryButton}
               >
                 📋 Copy to Clipboard
               </button>

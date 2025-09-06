@@ -275,6 +275,16 @@ export default function BulkSSLInspection({ theme }) {
             fontWeight: 500,
             transition: 'background-color 0.3s ease'
           }}
+          onMouseOver={(e) => {
+            if (!isProcessing && uploadedUrls.length > 0) {
+              e.target.style.backgroundColor = theme.primaryButtonHover
+            }
+          }}
+          onMouseOut={(e) => {
+            if (!isProcessing && uploadedUrls.length > 0) {
+              e.target.style.backgroundColor = theme.primaryButton
+            }
+          }}
         >
           {isProcessing ? `🔄 Processing... (${progress.current}/${progress.total})` : `🚀 Run Bulk Inspection (${uploadedUrls.length} URLs)`}
         </button>
