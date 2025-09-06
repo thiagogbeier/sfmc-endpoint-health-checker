@@ -2,21 +2,46 @@ const express = require('express');
 const cors = require('cors');
 const { exec } = require('child_process');
 const axios = require('axios');
+
 const app = express();
 const PORT = 3001;
 
-app.use(cors({
+// Enable CORS for GitHub Codespaces and localhost
+const corsOptions = {
   origin: [
     'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    /^https:\/\/.*\.app\.github\.dev$/,  // GitHub Codespaces domains
-    /^http:\/\/.*:5173$/                 // Local development
+    'http://localhost:5174',
+    'http://localhost:3000',
+    /^https:\/\/.*\.app\.github\.dev$/,
+    /^https:\/\/.*\.githubpreview\.dev$/,
+    /^https:\/\/.*\.preview\.app\.github\.dev$/
   ],
-  credentials: true
-}));
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: false,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// Health Check Endpoint
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'SFMC Health Checker Backend API',
+    version: '1.0.0',
+    endpoints: {
+      health: 'GET /api/health',
+      systemInfo: 'GET /api/system-info',
+      healthCheck: 'POST /api/health-check',
+      sslInspect: 'POST /api/ssl-inspect'
+    },
+    frontend: 'http://localhost:5173/sfmc-endpoint-health-checker/',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health endpoint
 app.post('/api/health-check', async (req, res) => {
   const { urls } = req.body;
   const results = [];
@@ -82,22 +107,102 @@ app.post('/api/health-check', async (req, res) => {
   res.json({ results });
 });
 
+// SSL Inspection Function for single hostname
+async function inspectSSLCertificate(hostname, port = 443) {
+  return new Promise((resolve, reject) => {
+    console.log(`[SSL Inspect] Checking: ${hostname}:${port}`);
+    
+    // Use timeout and proper OpenSSL command (removed -verify_return_error to handle self-signed certs)
+    const command = `timeout 15 openssl s_client -connect ${hostname}:${port} -servername ${hostname} < /dev/null 2>&1`;
+    
+    const startTime = Date.now();
+    exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
+      const responseTime = Date.now() - startTime;
+      console.log(`[SSL Inspect] Command completed for ${hostname}:${port} in ${responseTime}ms`);
+      
+      if (error && error.code === 'TIMEOUT') {
+        // Timeout
+        resolve({
+          hostname,
+          port: parseInt(port),
+          status: 'error',
+          message: 'Connection timeout (10s)',
+          connected: false,
+          responseTime,
+          timestamp: new Date().toISOString()
+        });
+      } else if (error) {
+        resolve({
+          hostname,
+          port: parseInt(port),
+          status: 'error',
+          message: 'Connection failed',
+          connected: false,
+          responseTime,
+          error: stderr || error.message,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        // Parse OpenSSL output
+        const certInfo = parseSSLOutput(stdout, hostname, port, responseTime);
+        resolve(certInfo);
+      }
+    });
+  });
+}
+
 // SSL Inspection Endpoint
 app.post('/api/ssl-inspect', (req, res) => {
-  const { urls } = req.body;
+  const { urls, hostname, port } = req.body;
+  
+  // Handle single hostname/port request (new format)
+  if (hostname && port) {
+    console.log(`[SSL Inspect] Single hostname request: ${hostname}:${port}`);
+    
+    inspectSSLCertificate(hostname, port)
+      .then(result => {
+        console.log(`[SSL Inspect] Result for ${hostname}:${port}:`, result.status);
+        res.json(result);
+      })
+      .catch(error => {
+        console.error(`[SSL Inspect] Error for ${hostname}:${port}:`, error.message);
+        res.json({
+          status: 'error',
+          error: error.message,
+          hostname,
+          port,
+          connected: false,
+          responseTime: null
+        });
+      });
+    return;
+  }
+  
+  // Handle multiple URLs request (legacy format)
   const results = [];
   let completed = 0;
   
-  console.log(`[SSL Inspect] Testing ${urls.filter(u => u.enabled).length} SSL certificates...`);
+  console.log(`[SSL Inspect] Request received with ${urls?.length || 0} URLs`);
   
-  if (urls.length === 0) {
+  if (!urls || urls.length === 0) {
     return res.json({ results: [] });
   }
+  
+  console.log(`[SSL Inspect] Testing ${urls.filter(u => u.enabled).length} SSL certificates...`);
+  
+  // Add request timeout to prevent hanging
+  const requestTimeout = setTimeout(() => {
+    console.log(`[SSL Inspect] Request timeout after 30 seconds`);
+    if (!res.headersSent) {
+      res.status(408).json({ error: 'Request timeout', results });
+    }
+  }, 30000);
   
   urls.forEach((urlObj) => {
     if (!urlObj.enabled || !urlObj.url) {
       completed++;
       if (completed === urls.length) {
+        clearTimeout(requestTimeout);
         res.json({ results });
       }
       return;
@@ -110,17 +215,18 @@ app.post('/api/ssl-inspect', (req, res) => {
     const command = `timeout 15 openssl s_client -connect ${hostname}:${port} -servername ${hostname} < /dev/null 2>&1`;
     
     const startTime = Date.now();
-    exec(command, (error, stdout, stderr) => {
+    exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
       const responseTime = Date.now() - startTime;
+      console.log(`[SSL Inspect] Command completed for ${hostname}:${port} in ${responseTime}ms`);
       
-      if (error && error.code === 124) {
+      if (error && error.code === 'TIMEOUT') {
         // Timeout
         results.push({
           id: urlObj.id,
           hostname,
           port: parseInt(port),
           status: 'error',
-          message: 'Connection timeout (15s)',
+          message: 'Connection timeout (10s)',
           responseTime,
           timestamp: new Date().toISOString()
         });
@@ -136,7 +242,7 @@ app.post('/api/ssl-inspect', (req, res) => {
           errorDetails: stderr || error.message,
           timestamp: new Date().toISOString()
         });
-        console.log(`[SSL Inspect] ✗ ${hostname}:${port}: Connection failed`);
+        console.log(`[SSL Inspect] ✗ ${hostname}:${port}: Connection failed - ${error.message}`);
       } else {
         // Parse OpenSSL output
         const certInfo = parseSSLOutput(stdout, hostname, port, responseTime);
@@ -146,8 +252,11 @@ app.post('/api/ssl-inspect', (req, res) => {
       
       completed++;
       if (completed === urls.length) {
+        clearTimeout(requestTimeout);
         console.log(`[SSL Inspect] Completed. ${results.filter(r => r.status === 'valid').length}/${results.length} valid certificates`);
-        res.json({ results });
+        if (!res.headersSent) {
+          res.json({ results });
+        }
       }
     });
   });
@@ -184,29 +293,38 @@ function parseSSLOutput(output, hostname, port, responseTime) {
     };
   }
   
-  // Extract certificate information from the new format
+  // Extract certificate information from different output formats
   let subject = '';
   let issuer = '';
   let notBefore = '';
   let notAfter = '';
   
   // Parse certificate chain format: " 0 s:CN = mam-tun-4.letsintune.com"
+  // Or newer format: " 0 s:CN = *.google.com"
   const chainMatch = output.match(/\s*0\s+s:(.+)/);
   if (chainMatch) {
     subject = chainMatch[1].trim();
   }
   
-  // Parse issuer from chain: " i:DC = com, DC = contoso..."
-  const issuerMatch = output.match(/\s*0\s+s:.+\n\s*i:(.+)/);
+  // Parse issuer from chain: " i:DC = com, DC = contoso..." or " i:C = US, O = Google Trust Services, CN = WR2"
+  const issuerMatch = output.match(/\s*0\s+s:.+?\n\s*i:(.+)/);
   if (issuerMatch) {
     issuer = issuerMatch[1].trim();
   }
   
-  // Parse validity dates from the v: line
-  const validityMatch = output.match(/v:NotBefore:\s*([^;]+);\s*NotAfter:\s*([^;]+)/);
+  // Parse validity dates from the v: line format: "v:NotBefore: Aug 18 08:39:58 2025 GMT; NotAfter: Nov 10 08:39:57 2025 GMT"
+  const validityMatch = output.match(/v:NotBefore:\s*([^;]+?GMT);\s*NotAfter:\s*([^;]+?GMT)/);
   if (validityMatch) {
     notBefore = validityMatch[1].trim();
     notAfter = validityMatch[2].trim();
+  }
+  
+  // Fallback: parse from older format
+  if (!notBefore || !notAfter) {
+    const notBeforeMatch = output.match(/notBefore=(.+)/);
+    const notAfterMatch = output.match(/notAfter=(.+)/);
+    if (notBeforeMatch) notBefore = notBeforeMatch[1].trim();
+    if (notAfterMatch) notAfter = notAfterMatch[1].trim();
   }
   
   // Extract protocol and cipher information

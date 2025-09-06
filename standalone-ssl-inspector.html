@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFMC SSL Inspector - WORKING VERSION</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #0176D3 0%, #005fb3 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: #0176D3; 
+            color: white; 
+            padding: 30px; 
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .section { 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            padding: 25px; 
+            margin-bottom: 25px; 
+            border-left: 4px solid #0176D3;
+        }
+        .form-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap;
+        }
+        input[type="text"] { 
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 16px; 
+            border: 2px solid #e9ecef; 
+            border-radius: 6px; 
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        input[type="text"]:focus { 
+            outline: none; 
+            border-color: #0176D3; 
+            box-shadow: 0 0 0 3px rgba(1, 118, 211, 0.1);
+        }
+        button { 
+            background: #0176D3; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        button:hover { 
+            background: #005fb3; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(1, 118, 211, 0.3);
+        }
+        button:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed; 
+            transform: none;
+            box-shadow: none;
+        }
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            color: #6c757d;
+            font-size: 18px;
+        }
+        .spinner { 
+            display: inline-block; 
+            width: 24px; 
+            height: 24px; 
+            border: 3px solid #f3f3f3; 
+            border-top: 3px solid #0176D3; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .results { 
+            background: white; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item { 
+            border: 1px solid #e9ecef; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            transition: all 0.3s ease;
+        }
+        .result-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .status-valid { border-left: 5px solid #28a745; background: linear-gradient(90deg, #d4edda 0%, white 20%); }
+        .status-warning { border-left: 5px solid #ffc107; background: linear-gradient(90deg, #fff3cd 0%, white 20%); }
+        .status-error { border-left: 5px solid #dc3545; background: linear-gradient(90deg, #f8d7da 0%, white 20%); }
+        .result-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .result-title { font-size: 1.3em; font-weight: bold; }
+        .result-badge { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            text-transform: uppercase;
+        }
+        .badge-valid { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #856404; }
+        .badge-error { background: #dc3545; color: white; }
+        .result-details { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 15px; 
+            margin-top: 15px;
+        }
+        .detail-item { 
+            background: rgba(0,0,0,0.02); 
+            padding: 12px; 
+            border-radius: 6px; 
+        }
+        .detail-label { font-weight: 600; color: #495057; margin-bottom: 4px; }
+        .detail-value { color: #212529; }
+        .console-output { 
+            background: #1a1a1a; 
+            color: #00ff00; 
+            padding: 15px; 
+            border-radius: 6px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px; 
+            max-height: 300px; 
+            overflow-y: auto; 
+            margin-top: 20px;
+        }
+        .quick-tests { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-top: 20px;
+        }
+        .quick-test { 
+            background: #e3f2fd; 
+            border: 1px solid #bbdefb; 
+            border-radius: 6px; 
+            padding: 15px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+        }
+        .quick-test:hover { 
+            background: #bbdefb; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 SFMC SSL Certificate Inspector</h1>
+            <p>Real-time SSL certificate analysis using OpenSSL</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h3>🔍 SSL Certificate Inspection</h3>
+                <div class="form-row">
+                    <input type="text" id="sslDomain" placeholder="Enter domain (e.g., www.google.com)" value="www.google.com">
+                    <button onclick="inspectSSL()" id="sslBtn">🔍 Inspect Certificate</button>
+                </div>
+                
+                <div class="quick-tests">
+                    <div class="quick-test" onclick="testDomain('www.google.com')">
+                        <strong>🌐 Google</strong><br>
+                        <small>Test public certificate</small>
+                    </div>
+                    <div class="quick-test" onclick="testDomain('mam-tun-4.letsintune.com')">
+                        <strong>🏢 Corporate</strong><br>
+                        <small>Test corporate certificate</small>
+                    </div>
+                    <div class="quick-test" onclick="testDomain('github.com')">
+                        <strong>👨‍💻 GitHub</strong><br>
+                        <small>Test developer platform</small>
+                    </div>
+                    <div class="quick-test" onclick="testDomain('expired.badssl.com')">
+                        <strong>⏰ Expired</strong><br>
+                        <small>Test expired certificate</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>💚 Health Check</h3>
+                <div class="form-row">
+                    <input type="text" id="healthUrl" placeholder="Enter URL (e.g., https://www.google.com)" value="https://www.google.com">
+                    <button onclick="checkHealth()" id="healthBtn">💚 Check Health</button>
+                </div>
+            </div>
+
+            <div id="console" class="console-output" style="display:none;"></div>
+            
+            <div id="results" class="results" style="display:none;">
+                <h3>📊 Results</h3>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            logMessages.push(logEntry);
+            
+            const consoleEl = document.getElementById('console');
+            consoleEl.style.display = 'block';
+            consoleEl.textContent = logMessages.slice(-20).join('\n'); // Keep last 20 messages
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            console.log(message);
+        }
+
+        function showResults(content) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = content;
+        }
+
+        function showLoading(message = 'Processing...') {
+            showResults(`<div class="loading"><span class="spinner"></span>${message}</div>`);
+        }
+
+        function testDomain(domain) {
+            document.getElementById('sslDomain').value = domain;
+            inspectSSL();
+        }
+
+        async function inspectSSL() {
+            const domain = document.getElementById('sslDomain').value.trim();
+            const btn = document.getElementById('sslBtn');
+            
+            if (!domain) {
+                alert('Please enter a domain');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '🔄 Inspecting...';
+            
+            logMessages = []; // Clear previous logs
+            log(`🔍 Starting SSL inspection for: ${domain}`);
+            showLoading('Analyzing SSL certificate...');
+
+            try {
+                const payload = {
+                    urls: [{ id: 1, url: domain, enabled: true }]
+                };
+                
+                log(`📤 Sending request to: ${API_BASE}/ssl-inspect`);
+                log(`📋 Payload: ${JSON.stringify(payload)}`);
+
+                const response = await fetch(`${API_BASE}/ssl-inspect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                log(`📡 Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log(`✅ Response received: ${JSON.stringify(data, null, 2)}`);
+                
+                const result = data.results[0];
+
+                if (!result) {
+                    throw new Error('No results returned from server');
+                }
+
+                log(`🎯 Inspection complete: ${result.status.toUpperCase()}`);
+
+                const statusClass = `status-${result.status}`;
+                const statusIcon = result.status === 'valid' ? '✅' : 
+                                 result.status === 'warning' ? '⚠️' : '❌';
+                const badgeClass = `badge-${result.status}`;
+
+                let html = `
+                    <div class="result-item ${statusClass}">
+                        <div class="result-header">
+                            <div class="result-title">${statusIcon} ${result.hostname}:${result.port}</div>
+                            <div class="result-badge ${badgeClass}">${result.status}</div>
+                        </div>
+                        <p style="margin-bottom: 15px; font-size: 16px; color: #495057;"><strong>${result.message}</strong></p>
+                        
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Response Time</div>
+                                <div class="detail-value">${result.responseTime}ms</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Connection</div>
+                                <div class="detail-value">${result.connected ? '✅ Connected' : '❌ Failed'}</div>
+                            </div>
+                `;
+
+                if (result.certificate) {
+                    html += `
+                            <div class="detail-item">
+                                <div class="detail-label">Subject</div>
+                                <div class="detail-value">${result.certificate.subject}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Issuer</div>
+                                <div class="detail-value">${result.certificate.issuer}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Valid From</div>
+                                <div class="detail-value">${result.certificate.validFrom}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Valid Until</div>
+                                <div class="detail-value">${result.certificate.validTo}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Days Until Expiry</div>
+                                <div class="detail-value">${result.certificate.daysUntilExpiry} days</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Protocol</div>
+                                <div class="detail-value">${result.protocol}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Cipher</div>
+                                <div class="detail-value">${result.cipher}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Key Size</div>
+                                <div class="detail-value">${result.certificate.keySize}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Chain Depth</div>
+                                <div class="detail-value">${result.certificate.chainDepth}</div>
+                            </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+                
+                showResults(html);
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                showResults(`
+                    <div class="result-item status-error">
+                        <div class="result-header">
+                            <div class="result-title">❌ SSL Inspection Failed</div>
+                            <div class="result-badge badge-error">ERROR</div>
+                        </div>
+                        <p><strong>Domain:</strong> ${domain}</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Possible Causes</div>
+                                <div class="detail-value">
+                                    • Backend server not running<br>
+                                    • CORS policy blocking request<br>
+                                    • Domain unreachable<br>
+                                    • Network connectivity issues
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Backend Status</div>
+                                <div class="detail-value">Check console logs below</div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Inspect Certificate';
+            }
+        }
+
+        async function checkHealth() {
+            const url = document.getElementById('healthUrl').value.trim();
+            const btn = document.getElementById('healthBtn');
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '🔄 Checking...';
+            
+            logMessages = []; // Clear previous logs
+            log(`💚 Starting health check for: ${url}`);
+            showLoading('Checking endpoint health...');
+
+            try {
+                const payload = {
+                    urls: [{ id: 1, url: url, enabled: true }]
+                };
+                
+                log(`📤 Sending request to: ${API_BASE}/health-check`);
+                log(`📋 Payload: ${JSON.stringify(payload)}`);
+
+                const response = await fetch(`${API_BASE}/health-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                log(`📡 Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log(`✅ Response received: ${JSON.stringify(data, null, 2)}`);
+                
+                const result = data.results[0];
+                log(`🎯 Health check complete: ${result.status.toUpperCase()}`);
+
+                const statusClass = result.status === 'healthy' ? 'status-valid' : 'status-error';
+                const statusIcon = result.status === 'healthy' ? '✅' : '❌';
+                const badgeClass = result.status === 'healthy' ? 'badge-valid' : 'badge-error';
+
+                showResults(`
+                    <div class="result-item ${statusClass}">
+                        <div class="result-header">
+                            <div class="result-title">${statusIcon} ${result.url}</div>
+                            <div class="result-badge ${badgeClass}">${result.status}</div>
+                        </div>
+                        <p style="margin-bottom: 15px; font-size: 16px; color: #495057;"><strong>${result.message}</strong></p>
+                        
+                        <div class="result-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Response Time</div>
+                                <div class="detail-value">${result.responseTime}ms</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Status Code</div>
+                                <div class="detail-value">${result.statusCode || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Timestamp</div>
+                                <div class="detail-value">${new Date(result.timestamp).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                showResults(`
+                    <div class="result-item status-error">
+                        <div class="result-header">
+                            <div class="result-title">❌ Health Check Failed</div>
+                            <div class="result-badge badge-error">ERROR</div>
+                        </div>
+                        <p><strong>URL:</strong> ${url}</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💚 Check Health';
+            }
+        }
+
+        // Auto-test on page load to verify connection
+        window.addEventListener('load', () => {
+            log('🚀 SFMC SSL Inspector loaded');
+            log('🔧 Backend API: ' + API_BASE);
+            log('📝 Ready for testing');
+            
+            setTimeout(() => {
+                document.getElementById('sslDomain').focus();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

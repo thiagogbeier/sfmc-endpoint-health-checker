@@ -190,11 +190,29 @@ export default function App() {
     setResults([])
     
     try {
-      // Call the real backend API
-      const response = await healthCheckAPI(validEndpoints)
+      console.log('🔍 Starting health check for:', validEndpoints);
+      
+      // Call the real backend API directly
+      const response = await fetch('http://localhost:3001/api/health-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ urls: validEndpoints })
+      });
+
+      console.log('📡 Health check response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Health check API response:', data);
       
       // Map backend response to frontend format
-      const mappedResults = response.results.map(result => ({
+      const mappedResults = data.results.map(result => ({
         id: result.id,
         url: result.url,
         status: result.status,
@@ -204,10 +222,11 @@ export default function App() {
         timestamp: result.timestamp
       }))
       
+      console.log('🎯 Mapped health results:', mappedResults);
       setResults(mappedResults)
       setHasResults(true)
     } catch (error) {
-      console.error('Health check failed:', error)
+      console.error('❌ Health check failed:', error)
       
       // Show error state
       const errorResults = validEndpoints.map(endpoint => ({

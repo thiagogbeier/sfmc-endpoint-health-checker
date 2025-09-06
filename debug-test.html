@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSL Inspector Debug</title>
+</head>
+<body>
+    <h1>SSL Inspector Debug Test</h1>
+    <button onclick="testBackend()">Test Backend Connection</button>
+    <button onclick="testSSL()">Test SSL Inspection</button>
+    <pre id="output"></pre>
+
+    <script>
+        const log = (message) => {
+            document.getElementById('output').textContent += message + '\n';
+            console.log(message);
+        };
+
+        async function testBackend() {
+            document.getElementById('output').textContent = '';
+            log('🔍 Testing backend connection...');
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/health');
+                log(`✅ Backend response status: ${response.status}`);
+                const data = await response.json();
+                log(`✅ Backend data: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`❌ Backend error: ${error.message}`);
+                log(`❌ Error details: ${error.stack}`);
+            }
+        }
+
+        async function testSSL() {
+            document.getElementById('output').textContent = '';
+            log('🔒 Testing SSL inspection...');
+            
+            try {
+                const payload = {
+                    urls: [
+                        { id: 1, url: "www.google.com", enabled: true }
+                    ]
+                };
+                
+                log(`📤 Sending payload: ${JSON.stringify(payload, null, 2)}`);
+                
+                const response = await fetch('http://localhost:3001/api/ssl-inspect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                log(`📡 Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                log(`✅ SSL result: ${JSON.stringify(result, null, 2)}`);
+                
+            } catch (error) {
+                log(`❌ SSL error: ${error.message}`);
+                log(`❌ Error details: ${error.stack}`);
+            }
+        }
+    </script>
+</body>
+</html>

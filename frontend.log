@@ -1,0 +1,19 @@
+
+> sfmc-endpoint-health-checker@0.0.1 dev
+> vite
+
+
+  VITE v5.4.19  ready in 184 ms
+
+  ➜  Local:   http://localhost:5173/sfmc-endpoint-health-checker/
+  ➜  Network: use --host to expose
+4:13:37 AM [vite] page reload working-app.html
+4:13:42 AM [vite] page reload working-app.html
+4:14:26 AM [vite] hmr update /src/SSLInspection.jsx
+4:14:51 AM [vite] hmr update /src/App.jsx
+4:16:50 AM [vite] page reload standalone-ssl-inspector.html
+4:16:51 AM [vite] page reload standalone-ssl-inspector.html
+4:18:44 AM [vite] page reload working-app.html
+4:18:44 AM [vite] hmr update /src/SSLInspection.jsx
+4:18:44 AM [vite] page reload standalone-ssl-inspector.html
+4:18:44 AM [vite] hmr update /src/App.jsx

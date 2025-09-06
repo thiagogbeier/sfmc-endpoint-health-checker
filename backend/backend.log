@@ -1,0 +1,60 @@
+==================================================
+🚀 SFMC Health Checker Backend Server
+==================================================
+📡 Server running on: http://0.0.0.0:3001
+🔍 Health Check API: POST /api/health-check
+🔒 SSL Inspect API: POST /api/ssl-inspect
+💚 Status API: GET /api/health
+ℹ️  System Info: GET /api/system-info
+==================================================
+✅ OpenSSL available: OpenSSL 3.0.16 11 Feb 2025 (Library: OpenSSL 3.0.16 11 Feb 2025)
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 51ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 43ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates
+[Health Check] Testing 1 URLs...
+[Health Check] Testing: https://www.google.com
+[Health Check] ✓ https://www.google.com: healthy (95ms)
+[Health Check] Completed. 1/1 healthy
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: mam-tun-4.letsintune.com:443
+[SSL Inspect] Command completed for mam-tun-4.letsintune.com:443 in 224ms
+[SSL Inspect] ✓ mam-tun-4.letsintune.com:443: warning
+[SSL Inspect] Completed. 0/1 valid certificates
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 45ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates
+[Health Check] Testing 1 URLs...
+[Health Check] Testing: https://www.google.com
+[Health Check] ✓ https://www.google.com: healthy (61ms)
+[Health Check] Completed. 1/1 healthy
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 48ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 63ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates
+[SSL Inspect] Request received with 1 URLs
+[SSL Inspect] Testing 1 SSL certificates...
+[SSL Inspect] Checking: www.google.com:443
+[SSL Inspect] Command completed for www.google.com:443 in 54ms
+[SSL Inspect] ✓ www.google.com:443: valid
+[SSL Inspect] Completed. 1/1 valid certificates

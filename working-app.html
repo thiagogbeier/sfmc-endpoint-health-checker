@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFMC SSL Inspector - Working Version</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .header { 
+            background: #0176D3; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        .form-group { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        input[type="text"] { 
+            width: 300px; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            margin-right: 10px; 
+        }
+        button { 
+            background: #0176D3; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        button:hover { background: #0056b3; }
+        .results { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .result-item { 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+        }
+        .status-valid { border-left: 4px solid #28a745; }
+        .status-warning { border-left: 4px solid #ffc107; }
+        .status-error { border-left: 4px solid #dc3545; }
+        .loading { text-align: center; padding: 20px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 SFMC SSL Certificate Inspector</h1>
+        <p>Real SSL certificate inspection using OpenSSL</p>
+    </div>
+
+    <div class="form-group">
+        <h3>SSL Certificate Inspection</h3>
+        <input type="text" id="sslDomain" placeholder="Enter domain (e.g., www.google.com)" value="www.google.com">
+        <button onclick="inspectSSL()">🔍 Inspect SSL Certificate</button>
+        <button onclick="inspectCorporate()">🏢 Test Corporate Domain</button>
+    </div>
+
+    <div class="form-group">
+        <h3>Health Check</h3>
+        <input type="text" id="healthUrl" placeholder="Enter URL (e.g., https://www.google.com)" value="https://www.google.com">
+        <button onclick="checkHealth()">💚 Check Health</button>
+    </div>
+
+    <div id="results" class="results" style="display:none;">
+        <h3>Results</h3>
+        <div id="resultContent"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+
+        function showResults(content) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = content;
+        }
+
+        function showLoading() {
+            showResults('<div class="loading">🔄 Processing...</div>');
+        }
+
+        async function inspectSSL() {
+            const domain = document.getElementById('sslDomain').value.trim();
+            if (!domain) {
+                alert('Please enter a domain');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/ssl-inspect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        urls: [{ id: 1, url: domain, enabled: true }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const result = data.results[0];
+
+                if (!result) {
+                    throw new Error('No results returned');
+                }
+
+                const statusClass = `status-${result.status}`;
+                const statusIcon = result.status === 'valid' ? '✅' : 
+                                 result.status === 'warning' ? '⚠️' : '❌';
+
+                let html = `
+                    <div class="result-item ${statusClass}">
+                        <h4>${statusIcon} ${result.hostname}:${result.port}</h4>
+                        <p><strong>Status:</strong> ${result.status}</p>
+                        <p><strong>Message:</strong> ${result.message}</p>
+                        <p><strong>Response Time:</strong> ${result.responseTime}ms</p>
+                `;
+
+                if (result.certificate) {
+                    html += `
+                        <p><strong>Subject:</strong> ${result.certificate.subject}</p>
+                        <p><strong>Issuer:</strong> ${result.certificate.issuer}</p>
+                        <p><strong>Valid From:</strong> ${result.certificate.validFrom}</p>
+                        <p><strong>Valid To:</strong> ${result.certificate.validTo}</p>
+                        <p><strong>Days Until Expiry:</strong> ${result.certificate.daysUntilExpiry}</p>
+                        <p><strong>Protocol:</strong> ${result.protocol}</p>
+                        <p><strong>Cipher:</strong> ${result.cipher}</p>
+                    `;
+                }
+
+                html += '</div>';
+                showResults(html);
+
+            } catch (error) {
+                showResults(`
+                    <div class="result-item status-error">
+                        <h4>❌ Error</h4>
+                        <p><strong>Domain:</strong> ${domain}</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Possible causes:</strong></p>
+                        <ul>
+                            <li>Backend server not running</li>
+                            <li>CORS policy blocking request</li>
+                            <li>Domain unreachable</li>
+                        </ul>
+                    </div>
+                `);
+            }
+        }
+
+        async function inspectCorporate() {
+            document.getElementById('sslDomain').value = 'mam-tun-4.letsintune.com';
+            await inspectSSL();
+        }
+
+        async function checkHealth() {
+            const url = document.getElementById('healthUrl').value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/health-check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        urls: [{ id: 1, url: url, enabled: true }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const result = data.results[0];
+
+                const statusClass = result.status === 'healthy' ? 'status-valid' : 'status-error';
+                const statusIcon = result.status === 'healthy' ? '✅' : '❌';
+
+                showResults(`
+                    <div class="result-item ${statusClass}">
+                        <h4>${statusIcon} ${result.url}</h4>
+                        <p><strong>Status:</strong> ${result.status}</p>
+                        <p><strong>Response Time:</strong> ${result.responseTime}ms</p>
+                        <p><strong>Status Code:</strong> ${result.statusCode || 'N/A'}</p>
+                        <p><strong>Message:</strong> ${result.message}</p>
+                    </div>
+                `);
+
+            } catch (error) {
+                showResults(`
+                    <div class="result-item status-error">
+                        <h4>❌ Health Check Failed</h4>
+                        <p><strong>URL:</strong> ${url}</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `);
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('sslDomain').focus();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFMC SSL Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; margin: 5px; background: #0176D3; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-left: 4px solid #0176D3; }
+        .success { border-left-color: #28a745; }
+        .warning { border-left-color: #ffc107; }
+        .error { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>🔍 SFMC SSL Inspection Test</h1>
+    
+    <div class="test-section">
+        <h2>Quick SSL Tests</h2>
+        <button onclick="testGoogle()">Test Google.com</button>
+        <button onclick="testCorporate()">Test Corporate Domain</button>
+        <button onclick="testExpired()">Test Expired Cert</button>
+        <button onclick="testGitHub()">Test GitHub</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        async function testSSL(domain, name) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="result">Testing ${name}...</div>`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/ssl-inspect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        urls: [{
+                            id: 'test',
+                            url: domain,
+                            enabled: true
+                        }]
+                    })
+                });
+                
+                const data = await response.json();
+                const result = data.results[0];
+                
+                let statusClass = 'success';
+                if (result.status === 'warning') statusClass = 'warning';
+                if (result.status === 'error' || result.status === 'expired') statusClass = 'error';
+                
+                resultsDiv.innerHTML = `
+                    <div class="result ${statusClass}">
+                        <h3>${name} - ${result.status.toUpperCase()}</h3>
+                        <p><strong>Message:</strong> ${result.message}</p>
+                        <p><strong>Response Time:</strong> ${result.responseTime}ms</p>
+                        ${result.certificate ? `
+                            <p><strong>Subject:</strong> ${result.certificate.subject}</p>
+                            <p><strong>Issuer:</strong> ${result.certificate.issuer}</p>
+                            <p><strong>Valid Until:</strong> ${result.certificate.validTo}</p>
+                            <p><strong>Days Until Expiry:</strong> ${result.certificate.daysUntilExpiry}</p>
+                        ` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>Error testing ${name}</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure the backend is running on port 3001</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function testGoogle() {
+            testSSL('www.google.com', 'Google (Valid Certificate)');
+        }
+        
+        function testCorporate() {
+            testSSL('mam-tun-4.letsintune.com', 'Corporate Domain (Self-signed)');
+        }
+        
+        function testExpired() {
+            testSSL('expired.badssl.com', 'Expired Certificate');
+        }
+        
+        function testGitHub() {
+            testSSL('github.com', 'GitHub (Valid Certificate)');
+        }
+    </script>
+</body>
+</html>
