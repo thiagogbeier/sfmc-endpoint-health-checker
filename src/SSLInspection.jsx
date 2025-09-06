@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { sslInspectAPI } from './services/api.js'
 
 export default function SSLInspection({ theme }) {
   const [urls, setUrls] = useState([
@@ -87,31 +88,48 @@ export default function SSLInspection({ theme }) {
     setHasResults(false)
 
     try {
-      const newResults = []
+      // Call the real backend API
+      const response = await sslInspectAPI(validUrls)
       
-      for (let i = 0; i < validUrls.length; i++) {
-        const { hostname, port } = parseUrl(validUrls[i].url)
-        
-        // Simulate processing delay
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000))
-        
-        const sslData = generateMockSSLData(hostname, port)
-        
-        newResults.push({
-          id: validUrls[i].id,
-          url: validUrls[i].url,
-          ...sslData,
-          status: sslData.connected ? 
-            (sslData.certificate.isExpired ? 'expired' : 
-             sslData.certificate.isExpiringSoon ? 'warning' : 'valid') : 'error'
-        })
-        
-        setResults([...newResults])
-      }
+      // Map backend response to frontend format
+      const mappedResults = response.results.map(result => ({
+        id: result.id,
+        url: validUrls.find(u => u.id === result.id)?.url || result.hostname,
+        hostname: result.hostname,
+        port: result.port,
+        status: result.status,
+        message: result.message,
+        connected: result.connected || false,
+        responseTime: result.responseTime,
+        protocol: result.protocol,
+        cipher: result.cipher,
+        certificate: result.certificate,
+        timestamp: result.timestamp
+      }))
       
+      setResults(mappedResults)
       setHasResults(true)
     } catch (error) {
       console.error('SSL inspection failed:', error)
+      
+      // Show error state
+      const errorResults = validUrls.map(urlObj => ({
+        id: urlObj.id,
+        url: urlObj.url,
+        hostname: urlObj.url.replace(/^https?:\/\//, '').split(':')[0],
+        port: 443,
+        status: 'error',
+        message: `Backend error: ${error.message}`,
+        connected: false,
+        responseTime: 0,
+        protocol: 'Unknown',
+        cipher: 'Unknown',
+        certificate: null,
+        timestamp: new Date().toISOString()
+      }))
+      
+      setResults(errorResults)
+      setHasResults(true)
     } finally {
       setIsChecking(false)
     }

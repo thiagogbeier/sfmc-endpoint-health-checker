@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SSLInspection from './SSLInspection.jsx'
+import { healthCheckAPI } from './services/api.js'
 
 export default function App() {
   // Navigation state
@@ -180,7 +181,7 @@ export default function App() {
     }
   }
 
-  // Mock health check function
+  // Real health check function using backend API
   const runHealthCheck = async () => {
     const validEndpoints = getValidEndpoints()
     if (validEndpoints.length === 0) return
@@ -188,64 +189,41 @@ export default function App() {
     setIsChecking(true)
     setResults([])
     
-    // Simulate checking each endpoint
-    const checkResults = []
-    
-    for (const endpoint of validEndpoints) {
-      // Validate URL format
-      const isValidUrl = /^https?:\/\/.+/.test(endpoint.url)
+    try {
+      // Call the real backend API
+      const response = await healthCheckAPI(validEndpoints)
       
-      if (!isValidUrl) {
-        checkResults.push({
-          id: endpoint.id,
-          url: endpoint.url,
-          status: 'error',
-          responseTime: 0,
-          message: 'Invalid URL format'
-        })
-        continue
-      }
-
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300))
+      // Map backend response to frontend format
+      const mappedResults = response.results.map(result => ({
+        id: result.id,
+        url: result.url,
+        status: result.status,
+        responseTime: result.responseTime,
+        message: result.message,
+        statusCode: result.statusCode,
+        timestamp: result.timestamp
+      }))
       
-      // Mock response time (50-800ms)
-      const responseTime = Math.floor(50 + Math.random() * 750)
+      setResults(mappedResults)
+      setHasResults(true)
+    } catch (error) {
+      console.error('Health check failed:', error)
       
-      // Mock failure scenarios (20% failure rate)
-      const shouldFail = Math.random() < 0.2
-      
-      let status, message
-      
-      if (shouldFail) {
-        const errorTypes = [
-          'Connection timeout',
-          'DNS resolution failed', 
-          'SSL certificate error',
-          'HTTP 500 Internal Server Error',
-          'HTTP 404 Not Found'
-        ]
-        status = 'error'
-        message = errorTypes[Math.floor(Math.random() * errorTypes.length)]
-      } else if (responseTime > responseThreshold) {
-        status = 'warning'
-        message = `High latency detected (>${responseThreshold}ms)`
-      } else {
-        status = 'healthy'
-        message = 'Endpoint responding normally'
-      }
-      
-      checkResults.push({
+      // Show error state
+      const errorResults = validEndpoints.map(endpoint => ({
         id: endpoint.id,
         url: endpoint.url,
-        status,
-        responseTime: shouldFail ? 0 : responseTime,
-        message
-      })
+        status: 'error',
+        responseTime: 0,
+        message: `Backend error: ${error.message}`,
+        statusCode: null,
+        timestamp: new Date().toISOString()
+      }))
+      
+      setResults(errorResults)
+      setHasResults(true)
     }
     
-    setResults(checkResults)
-    setHasResults(true)
     setIsChecking(false)
   }
 
